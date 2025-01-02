@@ -21,8 +21,9 @@ optimizer: "AdamW"
 lr: 0.0003
 wd: 0.00001
 scheduler: "CosineAnnealingLR"
-cosine_min_lr: 1e-8
-cosine_T_max: 300
+cosine_min_lr: 1e-6
+cosine_T_max: 200
+
 reduce_patience: 3
 reduce_factor: 0.9
 tb: true
@@ -35,8 +36,8 @@ val_txt: "/root/workspace/SliceMedix/data/val_paths.txt"
 test_txt: "/root/workspace/SliceMedix/data/test_paths.txt"
 
 local_train: False
-train_length: 10000
-val_length: 2000
+train_length: 1000
+val_length: 200
 results_root: "/root/workspace/SliceMedix/results"
 commit: "debug"
 

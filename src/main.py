@@ -162,7 +162,7 @@ def main(args):
     optimizer = AdamW(model.parameters(), lr=args.lr, betas=(0.9, 0.99), weight_decay=args.wd)
 
     """------------------------------------- 调度器 --------------------------------------------"""
-    scheduler = CosineAnnealingLR(optimizer, T_max=args.cosine_T_max, eta_min=args.cosine_min_lr)
+    scheduler = CosineAnnealingLR(optimizer, T_max=args.cosine_T_max, eta_min=float(args.cosine_min_lr))
 
     """------------------------------------- 损失函数 --------------------------------------------"""
     loss_function = DiceLoss()

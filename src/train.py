@@ -146,7 +146,7 @@ def train(model, Metrics, train_loader, val_loader, scaler, optimizer, scheduler
         train_running_loss, train_et_loss, train_tc_loss, train_wt_loss = train_one_epoch(model, train_loader, optimizer, loss_function, scaler, device)
 
         
-        if scheduler_name == 'CosineAnnealingLR' and epoch > scheduler_start_epoch:
+        if scheduler is not None and scheduler_name == 'CosineAnnealingLR' and epoch > scheduler_start_epoch:
             scheduler.step()
         writer.add_scalars(f'{loss_func_name}/train',
                            {'Mean':train_mean_loss, 'ET': train_wt_loss, 'TC': train_tc_loss, 'WT': train_wt_loss}, epoch)

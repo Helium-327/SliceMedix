@@ -2,7 +2,7 @@
 
 > 设计用于脑肿瘤分割的网络
 
-- [ ] Unet
+- [X] Unet
 - [ ] Uent + EMA
 - [ ] transUnet
 
@@ -38,7 +38,6 @@
 ### 2. 怎么读取NII数据
 
 > 要读取NIfTI（Neuroimaging Informatics Technology Initiative）文件，您可以使用Python中的 `nibabel`库。NIfTI是一种常用的医学图像格式，用于存储MRI、CT等医学图像数据。以下是一个简单的示例代码，展示了如何使用 `nibabel`库读取NIfTI文件
-
 
 ```python
 import nibabel as nib
