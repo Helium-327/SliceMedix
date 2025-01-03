@@ -43,8 +43,8 @@ MetricsGo = EvaluationMetrics()  # 实例化评估指标类
 def initialize_model(args):
     """初始化模型"""
     if args.model == 'unet':
-        model = UNet(in_channels=args.in_channel, out_channels=args.out_channel)
-    weights_init(model)
+        model = UNet(in_channels=args.in_channel, mid_channels=args.mid_channel, out_channels=args.out_channel)
+    init_weights_light(model)
     
     model.to(DEVICE)
     return model
@@ -53,16 +53,20 @@ def load_data(args):
     """加载数据集"""
     TransMethods_train = Compose([
         ToTensor(),
-        CenterRandomCrop(crop_size=(128, 128)),
+        RandomCrop(crop_size=(224, 224)),
         RandomHorizontalFlip(),
         RandomVerticalFlip(),
-        RandomRotation((0, 360)),
-        Normalize()
+        ZScoreNormalize()
+        # ForegroundNormalization()
     ])
 
     TransMethods_val = Compose([
         ToTensor(),
-        Normalize()
+        RandomCrop(crop_size=(224, 224)),
+        RandomHorizontalFlip(),
+        RandomVerticalFlip(),
+        ZScoreNormalize()
+        # ForegroundNormalization()
     ])
 
     train_dataset = BRATS21_2D(
@@ -79,11 +83,14 @@ def load_data(args):
         length=args.val_length,
     )
 
+    setattr(args, 'train_length', len(train_dataset))
+    setattr(args, 'val_length', len(val_dataset))
+
     train_loader = DataLoader(
         dataset=train_dataset,
         batch_size=args.batch_size,
         shuffle=True,
-        num_workers=8,
+        num_workers=args.num_workers,
         pin_memory=True
     )
 
@@ -91,11 +98,9 @@ def load_data(args):
         dataset=val_dataset,
         batch_size=args.batch_size,
         shuffle=False,
-        num_workers=8,
+        num_workers=args.num_workers,
         pin_memory=True
     )
-    # args.setattr('train_length', len(train_loader))
-    # args.setattr('val_length', len(val_loader))
     
     print(f"已加载数据集, 训练集: {len(train_loader)}, 验证集: {len(val_loader)}")
 
@@ -159,10 +164,19 @@ def main(args):
     train_loader, val_loader = load_data(args)
 
     """------------------------------------- 优化器 --------------------------------------------"""
-    optimizer = AdamW(model.parameters(), lr=args.lr, betas=(0.9, 0.99), weight_decay=args.wd)
+    optimizer = AdamW(model.parameters(), lr=float(args.lr), betas=(0.9, 0.99), weight_decay=float(args.wd))
 
     """------------------------------------- 调度器 --------------------------------------------"""
-    scheduler = CosineAnnealingLR(optimizer, T_max=args.cosine_T_max, eta_min=float(args.cosine_min_lr))
+    scheduler = torch.optim.lr_scheduler.CosineAnnealingWarmRestarts(
+        optimizer, 
+        T_0=int(args.cosine_T_0),           # T_0是第一个周期的长度
+        T_mult=int(args.cosine_T_mult),     # T_mult=2,  # 每次重启后周期翻倍
+        eta_min=float(args.cosine_eta_min)) # 最小学习率
+    
+    # scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(
+    #     optimizer, 
+    #     T_max=args.cosine_T_max, 
+    #     eta_min=float(args.cosine_eta_min))
 
     """------------------------------------- 损失函数 --------------------------------------------"""
     loss_function = DiceLoss()

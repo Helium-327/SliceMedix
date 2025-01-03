@@ -144,41 +144,108 @@ class CenterRandomCrop(object):
 
         return data, mask
 
-class Normalize(object):
-    def __init__(self, mean=(0.114, 0.090, 0.170, 0.096), std=(0.199, 0.151, 0.282, 0.174)):
-        self.mean = mean
-        self.std = std
-
+class ZScoreNormalize(object):
+    # Z-score 标准化基于均值和标准差，对异常值的敏感度较低，适合处理包含噪声或离群点的数据。
+    def __init__(self):
+        # mean=(0.114, 0.090, 0.170, 0.096), std=(0.199, 0.151, 0.282, 0.174)
+        pass
     def __call__(self, image, label):
-        normalize = T.Normalize(mean=self.mean, std=self.std)
-        image = normalize(image)
-        for k in range(image.shape[0]):
-            image[k] = (image[k] - image[k].min()) / (image[k].max() - image[k].min())
+        image = T.Normalize(mean=image.mean(dim=(-2, -1)), std=image.std(dim=(-2, -1)))(image)               # Z-score
         return image, label
-
-class Normalize2(object):
+    
+class MinMaxNormalize(object):
+    # 归一化后的数据保留了原始数据的分布形状，只是进行了线性缩放
+    # 如果数据中存在极端值（如噪声或离群点），min 和 max 会受到这些值的影响，导致归一化后的数据分布不均匀
     def __init__(self):
         pass
 
     def __call__(self, image, label):
         for k in range(image.shape[0]):
-            image[k] = (image[k] - image[k].min()) / (image[k].max() - image[k].min())
+            if image[k].max() == image[k].min():
+                continue
+            else:
+                image[k] = (image[k] - image[k].min()) / (image[k].max() - image[k].min())
         
         return image, label
 
-class Normalize3(object):
-    def __init__(self):
-        pass
-    
+
+class ForegroundNormalization(object):
+    def __init__(self, eps=1e-6):
+        self.eps = eps  # 防止除以零的小常数
+
     def __call__(self, image, label):
-        for k in range(4):                   # 单个案例数据归一化，四个模态分别进行归一化
-            x = image[k,...]                 # 取第k个模态的数据
-            y = x[label]                      # 只取前景区域数据，，背景数据不包含其中
-            x[label] -= y.mean()              # 仅对前景区域进行标准化处理
-            x[label] /= (y.std() + 1e-6)
-            # print(x[mask].mean(),x[mask].std())
-            image[k,...] = x
+        """
+        对每个模态的前景区域进行标准化处理。
+        :param image: 输入图像，形状为 (C, H, W)
+        :param label: 前景区域的掩码，形状为 (H, W)
+        :return: 标准化后的图像和标签
+        """
+        for k in range(4):  # 单个案例数据归一化，四个模态分别进行归一化
+            x = image[k, ...]  # 取第k个模态的数据
+            y = x[label]  # 只取前景区域数据，背景数据不包含其中
+
+            # 计算前景区域的均值和标准差
+            mean = y.mean()
+            std = y.std() + self.eps
+
+            # 如果前景区域的标准差为零，设置为 1.0 以避免除以零
+            if std < self.eps:
+                std = 1.0
+
+            # 仅对前景区域进行标准化处理
+            x[label] = (x[label] - mean) / std
+
+            # 将标准化后的数据赋值回图像
+            image[k, ...] = x
+
         return image, label
+    
+class ForegroundNormalization_vector(object):
+    def __init__(self, eps=1e-6):
+        self.eps = eps
+        
+    def __call__(self, image, label):
+        # 使用向量化操作替代循环
+        mask = label.unsqueeze(0).expand_as(image)  # 扩展mask维度匹配图像
+        
+        # 计算每个模态的前景区域统计量
+        means = []
+        stds = []
+        for k in range(image.shape[0]):
+            foreground = image[k][label]
+            means.append(foreground.mean())
+            stds.append(foreground.std().clamp(min=self.eps))
+        
+        # 向量化标准化
+        means = torch.tensor(means).view(-1, 1, 1)
+        stds = torch.tensor(stds).view(-1, 1, 1)
+        
+        normalized_image = torch.where(
+            mask,
+            (image - means) / stds,
+            image
+        )
+        
+        return normalized_image, label
+
+
+#     # class Normalize3(object):
+#     def __init__(self):
+#         pass
+    
+#     def __call__(self, image, label):
+#         for k in range(4):                   # 单个案例数据归一化，四个模态分别进行归一化
+#             x = image[k,...]                 # 取第k个模态的数据
+#             y = x[label]                      # 只取前景区域数据，，背景数据不包含其中
+#             x[label] -= y.mean()              # 仅对前景区域进行标准化处理
+#             x[label] /= (y.std() + 1e-6)
+#             # print(x[mask].mean(),x[mask].std())
+#             image[k,...] = x
+            
+#         return image, label
+
+
+
 
 if __name__ == "__main__":
     input_tensor = np.random.rand(240, 240, 4)

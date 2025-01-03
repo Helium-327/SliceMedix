@@ -7,7 +7,7 @@
 
 # !说明：
 数据集： BRATS21 
-输入：  (B, C, H, W) = (16, 144, 240, 240)
+输入：  (B, C, H, W) = (16, 4, 240, 240)
 输出：  (B, C, H, W) = (16, 4, 240, 240)
 =================================================
 '''
@@ -15,35 +15,47 @@
 
 
 import re
+from regex import B
 import torch
 from torch import nn
 
-class EncoderBlcok(nn.Module):
+class DoubleConv(nn.Module):
     def __init__(self, in_channels, out_channels):
-        super(EncoderBlcok, self).__init__()
+        super(DoubleConv, self).__init__()
         self.conv1 = nn.Conv2d(in_channels, out_channels, kernel_size=3, padding=1)
         self.bn1 = nn.BatchNorm2d(out_channels)
         self.relu1 = nn.ReLU()
+        self.conv2 = nn.Conv2d(out_channels, out_channels, kernel_size=3, padding=1)
+        self.bn2 = nn.BatchNorm2d(out_channels)
+        self.relu2 = nn.ReLU()
     
     def forward(self, x):
         x = self.conv1(x)
         x = self.bn1(x)
         x = self.relu1(x)
+        x = self.conv2(x)
+        x = self.bn2(x)
+        x = self.relu2(x)
         return x
 
-class DecoderBlcok(nn.Module):
-    def __init__(self, in_channels, out_channels):
-        super(DecoderBlcok, self).__init__()
-        self.conv1 = nn.Conv2d(in_channels, out_channels, kernel_size=3, padding=1)
-        self.bn1 = nn.BatchNorm2d(out_channels)
-        self.relu1 = nn.ReLU()
+# class DecoderBlcok(nn.Module):
+#     def __init__(self, in_channels, out_channels):
+#         super(DecoderBlcok, self).__init__()
+#         self.conv1 = nn.Conv2d(in_channels, out_channels, kernel_size=3, padding=1)
+#         self.bn1 = nn.BatchNorm2d(out_channels)
+#         self.relu1 = nn.ReLU()
+#         self.conv2 = nn.Conv2d(out_channels, out_channels, kernel_size=3, padding=1)
+#         self.bn2 = nn.BatchNorm2d(out_channels)
+#         self.relu2 = nn.ReLU()
 
-    def forward(self, x):
-        x = self.conv1(x)
-        x = self.bn1(x)
-        x = self.relu1(x)
+#     def forward(self, x):
+#         x = self.conv1(x)
+#         x = self.bn1(x)
+#         x = self.relu1(x)
+#         x = self.conv2(x)
+#         x = self.bn2(x)
 
-        return x
+#         return x
 
 
 class EncoderAndDecoder(nn.Module):
@@ -63,15 +75,15 @@ class EncoderAndDecoder(nn.Module):
         self.pooling = nn.MaxPool2d(kernel_size=2, stride=2)
         self.upsampling = nn.Upsample(scale_factor=2, mode='bilinear', align_corners=True)
 
-        self.encoder1 = EncoderBlcok(in_channels, mid_channels*2)
-        self.encoder2 = EncoderBlcok(mid_channels*2, mid_channels*4)
-        self.encoder3 = EncoderBlcok(mid_channels*4, mid_channels*8)
-        self.encoder4 = EncoderBlcok(mid_channels*8, mid_channels*16)
+        self.encoder1 = DoubleConv(in_channels, mid_channels*2)
+        self.encoder2 = DoubleConv(mid_channels*2, mid_channels*4)
+        self.encoder3 = DoubleConv(mid_channels*4, mid_channels*8)
+        self.encoder4 = DoubleConv(mid_channels*8, mid_channels*16)
 
-        self.decoder1 = DecoderBlcok(mid_channels*16, mid_channels*8)
-        self.decoder2 = DecoderBlcok(mid_channels*8, mid_channels*4)
-        self.decoder3 = DecoderBlcok(mid_channels*4, mid_channels*2)
-        self.decoder4 = DecoderBlcok(mid_channels*2, mid_channels)
+        self.decoder1 = DoubleConv(mid_channels*16, mid_channels*8)
+        self.decoder2 = DoubleConv(mid_channels*8, mid_channels*4)
+        self.decoder3 = DoubleConv(mid_channels*4, mid_channels*2)
+        self.decoder4 = DoubleConv(mid_channels*2, mid_channels)
 
     
     def forward(self, x):      # (16, 144, 240, 240)
@@ -106,15 +118,15 @@ class UNet(nn.Module):
         self.pooling = nn.MaxPool2d(kernel_size=2, stride=2)
         self.upsampling = nn.Upsample(scale_factor=2, mode='bilinear', align_corners=True)
 
-        self.encoder1 = EncoderBlcok(in_channels, mid_channels*2)           # 4 -> 64
-        self.encoder2 = EncoderBlcok(mid_channels*2, mid_channels*4)        # 64 -> 128
-        self.encoder3 = EncoderBlcok(mid_channels*4, mid_channels*8)        # 128 -> 256
-        self.encoder4 = EncoderBlcok(mid_channels*8, mid_channels*16)       # 256 -> 512
+        self.encoder1 = DoubleConv(in_channels, mid_channels*2)           # 4 -> 64
+        self.encoder2 = DoubleConv(mid_channels*2, mid_channels*4)        # 64 -> 128
+        self.encoder3 = DoubleConv(mid_channels*4, mid_channels*8)        # 128 -> 256
+        self.encoder4 = DoubleConv(mid_channels*8, mid_channels*16)       # 256 -> 512
 
-        self.decoder1 = DecoderBlcok(mid_channels*32, mid_channels*8)       # 1024 -> 256
-        self.decoder2 = DecoderBlcok(mid_channels*16, mid_channels*4)        # 512 -> 128
-        self.decoder3 = DecoderBlcok(mid_channels*8, mid_channels*2)        # 256 -> 64
-        self.decoder4 = DecoderBlcok(mid_channels*4, mid_channels)          # 128 -> 32
+        self.decoder1 = DoubleConv(mid_channels*32, mid_channels*8)       # 1024 -> 256
+        self.decoder2 = DoubleConv(mid_channels*16, mid_channels*4)        # 512 -> 128
+        self.decoder3 = DoubleConv(mid_channels*8, mid_channels*2)        # 256 -> 64
+        self.decoder4 = DoubleConv(mid_channels*4, mid_channels)          # 128 -> 32
 
 
         self.out_conv = nn.Conv2d(mid_channels, out_channels, kernel_size=1, padding=0)
@@ -154,8 +166,6 @@ class UNet(nn.Module):
         out = self.out_conv(x)                                   # (16, 4, 240, 240)
 
         out = self.softmax(out)
-        if torch.isnan(out).any() or torch.isinf(out).any():
-            raise ValueError("Output tensor contains NaN or Inf values.")
 
         return out
     
@@ -180,15 +190,15 @@ class UNet2(nn.Module):
         self.upsample3 = nn.ConvTranspose2d(mid_channels * 4, mid_channels * 2, kernel_size=2, stride=2)
         self.upsample4 = nn.ConvTranspose2d(mid_channels * 2, mid_channels, kernel_size=2, stride=2)
 
-        self.encoder1 = EncoderBlcok(in_channels, mid_channels*2)           # 4 -> 64
-        self.encoder2 = EncoderBlcok(mid_channels*2, mid_channels*4)        # 64 -> 128
-        self.encoder3 = EncoderBlcok(mid_channels*4, mid_channels*8)        # 128 -> 256
-        self.encoder4 = EncoderBlcok(mid_channels*8, mid_channels*16)       # 256 -> 512
+        self.encoder1 = DoubleConv(in_channels, mid_channels*2)           # 4 -> 64
+        self.encoder2 = DoubleConv(mid_channels*2, mid_channels*4)        # 64 -> 128
+        self.encoder3 = DoubleConv(mid_channels*4, mid_channels*8)        # 128 -> 256
+        self.encoder4 = DoubleConv(mid_channels*8, mid_channels*16)       # 256 -> 512
 
-        self.decoder1 = DecoderBlcok(mid_channels*32, mid_channels*8)       # 1024 -> 256
-        self.decoder2 = DecoderBlcok(mid_channels*16, mid_channels*4)        # 512 -> 128
-        self.decoder3 = DecoderBlcok(mid_channels*8, mid_channels*2)        # 256 -> 64
-        self.decoder4 = DecoderBlcok(mid_channels*4, mid_channels)          # 128 -> 32
+        self.decoder1 = DoubleConv(mid_channels*32, mid_channels*8)       # 1024 -> 256
+        self.decoder2 = DoubleConv(mid_channels*16, mid_channels*4)        # 512 -> 128
+        self.decoder3 = DoubleConv(mid_channels*8, mid_channels*2)        # 256 -> 64
+        self.decoder4 = DoubleConv(mid_channels*4, mid_channels)          # 128 -> 32
 
 
         self.out_conv = nn.Conv2d(mid_channels, out_channels, kernel_size=1, padding=0)
