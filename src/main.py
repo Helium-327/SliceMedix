@@ -54,8 +54,8 @@ def load_data(args):
     TransMethods_train = Compose([
         ToTensor(),
         RandomCrop(crop_size=(224, 224)),
-        RandomHorizontalFlip(),
-        RandomVerticalFlip(),
+        # RandomHorizontalFlip(),
+        # RandomVerticalFlip(),
         ZScoreNormalize()
         # ForegroundNormalization()
     ])
@@ -63,8 +63,8 @@ def load_data(args):
     TransMethods_val = Compose([
         ToTensor(),
         RandomCrop(crop_size=(224, 224)),
-        RandomHorizontalFlip(),
-        RandomVerticalFlip(),
+        # RandomHorizontalFlip(),
+        # RandomVerticalFlip(),
         ZScoreNormalize()
         # ForegroundNormalization()
     ])

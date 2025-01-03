@@ -51,16 +51,17 @@ class ToTensor(object):
         mask = F.to_tensor(mask).to(torch.int64)
 
         return data, mask
-    
-# 角度增强
+
+#! 调整图像和标签的大小和方向时，需要注意，图像和标签的大小和方向必须一致。
 class RandomHorizontalFlip(object):
     def __init__(self, flip_prob=0.5):
         self.flip_prob = flip_prob
         
     def __call__(self, data, mask):
-        data = T.RandomHorizontalFlip(p=self.flip_prob)(data)
-        mask = T.RandomHorizontalFlip(p=self.flip_prob)(mask)
-        
+        # 生成一个随机数，决定是否翻转
+        if torch.rand(1) < self.flip_prob: # 生成一个随机数，决定是否翻转
+            data = F.hflip(data)
+            mask = F.hflip(mask)
         return data, mask
     
 class RandomVerticalFlip(object):
@@ -68,9 +69,10 @@ class RandomVerticalFlip(object):
         self.flip_prob = flip_prob
 
     def __call__(self, data, mask):
-        data = T.RandomVerticalFlip(p=self.flip_prob)(data)
-        mask = T.RandomVerticalFlip(p=self.flip_prob)(mask)
-
+        # 生成一个随机数，决定是否翻转
+        if torch.rand(1) < self.flip_prob:  # 生成一个随机数，决定是否翻转
+            data = F.vflip(data)
+            mask = F.vflip(mask)
         return data, mask
 
 class RandomRotation(object):
@@ -78,9 +80,10 @@ class RandomRotation(object):
         self.degrees = degrees
 
     def __call__(self, data, mask):
-        data = T.RandomRotation(self.degrees)(data)
-        mask = T.RandomRotation(self.degrees)(mask)
-
+        # 生成相同的随机角度
+        angle = T.RandomRotation.get_params(self.degrees)
+        data = F.rotate(data, angle)
+        mask = F.rotate(mask, angle)
         return data, mask
             
 # 尺寸增强
@@ -188,10 +191,6 @@ class ForegroundNormalization(object):
             mean = y.mean()
             std = y.std() + self.eps
 
-            # 如果前景区域的标准差为零，设置为 1.0 以避免除以零
-            if std < self.eps:
-                std = 1.0
-
             # 仅对前景区域进行标准化处理
             x[label] = (x[label] - mean) / std
 
@@ -200,35 +199,6 @@ class ForegroundNormalization(object):
 
         return image, label
     
-class ForegroundNormalization_vector(object):
-    def __init__(self, eps=1e-6):
-        self.eps = eps
-        
-    def __call__(self, image, label):
-        # 使用向量化操作替代循环
-        mask = label.unsqueeze(0).expand_as(image)  # 扩展mask维度匹配图像
-        
-        # 计算每个模态的前景区域统计量
-        means = []
-        stds = []
-        for k in range(image.shape[0]):
-            foreground = image[k][label]
-            means.append(foreground.mean())
-            stds.append(foreground.std().clamp(min=self.eps))
-        
-        # 向量化标准化
-        means = torch.tensor(means).view(-1, 1, 1)
-        stds = torch.tensor(stds).view(-1, 1, 1)
-        
-        normalized_image = torch.where(
-            mask,
-            (image - means) / stds,
-            image
-        )
-        
-        return normalized_image, label
-
-
 #     # class Normalize3(object):
 #     def __init__(self):
 #         pass

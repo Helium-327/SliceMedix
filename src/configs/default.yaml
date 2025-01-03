@@ -1,10 +1,11 @@
 # 配置文件
 
 epochs: 200
-nw: 8
-batch_size: 128
+num_workers: 8
+batch_size: 32
 model: "unet"
 in_channel: 4
+mid_channel: 32
 out_channel: 4
 fusion_flag: true
 input_channels: 4
@@ -37,9 +38,9 @@ train_txt: "/root/workspace/SliceMedix/data/train_paths.txt"
 val_txt: "/root/workspace/SliceMedix/data/val_paths.txt"
 test_txt: "/root/workspace/SliceMedix/data/test_paths.txt"
 
-local_train: False
-train_length: 20000
-val_length: 4000
+local_train: True
+train_length: 1000
+val_length: 200
 results_root: "/root/workspace/SliceMedix/results"
 commit: "debug"
 

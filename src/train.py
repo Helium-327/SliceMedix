@@ -141,15 +141,15 @@ def train(model, Metrics, train_loader, val_loader, scaler, optimizer, scheduler
         """-------------------------------------- 训练过程 --------------------------------------------------"""
         print(f"=== Training on [Epoch {epoch}/{end_epoch}] ===:")
         
-        train_mean_loss = 0.0
         start_time = time.time()
         train_running_loss, train_et_loss, train_tc_loss, train_wt_loss = train_one_epoch(model, train_loader, optimizer, loss_function, scaler, device)
 
         
         if scheduler is not None and scheduler_name == 'CosineAnnealingLR' and epoch > scheduler_start_epoch:
             scheduler.step()
+
         writer.add_scalars(f'{loss_func_name}/train',
-                           {'Mean':train_mean_loss, 'ET': train_wt_loss, 'TC': train_tc_loss, 'WT': train_wt_loss}, epoch)
+                           {'Mean':train_running_loss, 'ET': train_wt_loss, 'TC': train_tc_loss, 'WT': train_wt_loss}, epoch)
         end_time = time.time()
         train_cost_time = end_time - start_time
         print(f"- Train mean loss: {train_running_loss:.4f}\n"
@@ -180,7 +180,7 @@ def train(model, Metrics, train_loader, val_loader, scaler, optimizer, scheduler
                                {'Mean':val_running_loss, 'ET': val_et_loss, 'TC': val_tc_loss, 'WT': val_wt_loss}, 
                                epoch)
             writer.add_scalars(f'{loss_func_name}/Mean', 
-                               {'Train':train_mean_loss, 'Val':val_running_loss}, 
+                               {'Train':train_running_loss, 'Val':val_running_loss}, 
                                epoch)
             writer.add_scalars(f'{loss_func_name}/ET',
                                {'Train':train_et_loss, 'Val':val_et_loss}, 
