@@ -23,8 +23,8 @@ from utils.logger_tools import *
 from utils.shell_tools import *
 from utils.tb_tools import *
 from evaluate.metrics import EvaluationMetrics
-from models.unet import UNet, UNet2
-from models.init_weights import init_weights_light, weights_init
+from nnArchitecture.unet import UNet
+from nnArchitecture.init_weights import init_weights_light
 from datasets.transforms import *
 from datasets.brats21 import BRATS21_2D
 from evaluate.lossFunc import *
@@ -54,8 +54,8 @@ def load_data(args):
     TransMethods_train = Compose([
         ToTensor(),
         RandomCrop(crop_size=(224, 224)),
-        # RandomHorizontalFlip(),
-        # RandomVerticalFlip(),
+        RandomHorizontalFlip(),
+        RandomVerticalFlip(),
         ZScoreNormalize()
         # ForegroundNormalization()
     ])
@@ -63,8 +63,6 @@ def load_data(args):
     TransMethods_val = Compose([
         ToTensor(),
         RandomCrop(crop_size=(224, 224)),
-        # RandomHorizontalFlip(),
-        # RandomVerticalFlip(),
         ZScoreNormalize()
         # ForegroundNormalization()
     ])
@@ -216,7 +214,7 @@ def parse_args_from_yaml(yaml_file):
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='Train args')
     parser.add_argument('--config', type=str, 
-                        default='/root/workspace/SliceMedix/src/configs/default.yaml', 
+                        default='/root/workspace/SliceMedix/src/configs/debug.yaml', 
                         help='Path to the configuration YAML file')
     parser.add_argument('--resume', type=str, 
                         default=None, 

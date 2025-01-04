@@ -17,7 +17,7 @@ def get_current_date():
 
 # 获取当前时间
 def get_current_time():
-    return datetime.now().strftime('%H:%M:%S')
+    return datetime.now().strftime('%H-%M-%S')
 
 def custom_logger(content, file_pth, log_time=False):
     '''

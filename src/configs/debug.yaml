@@ -1,8 +1,8 @@
 # 配置文件
 
-epochs: 200
+epochs: 50
 num_workers: 8
-batch_size: 64
+batch_size: 32
 model: "unet"
 in_channel: 4
 mid_channel: 32
@@ -39,9 +39,9 @@ val_txt: "/root/workspace/SliceMedix/data/val_paths.txt"
 test_txt: "/root/workspace/SliceMedix/data/test_paths.txt"
 
 local_train: True
-train_length: 20000
-val_length: 4000
+train_length: 1000
+val_length: 200
 results_root: "/root/workspace/SliceMedix/results"
-commit: "Train"
+commit: "debug"
 
 

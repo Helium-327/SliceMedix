@@ -95,6 +95,7 @@ class BRATS21_2D(Dataset):
 
 
 if __name__ == '__main__':
+    from transforms import *
     txt_file = '/root/workspace/SliceMedix/data/multi_h5_paths.txt'
     # dataset = BRATS21_2D(txt_file, local_train=True, length=10)
     # print(len(dataset))
@@ -109,7 +110,7 @@ if __name__ == '__main__':
         RandomHorizontalFlip(flip_prob=0.5),
         RandomVerticalFlip(flip_prob=0.5),
         RandomRotation((0, 360)),
-        Normalize(),
+        ZScoreNormalize(),
     ])
 
     trans_trian = Compose([
@@ -118,7 +119,7 @@ if __name__ == '__main__':
             RandomHorizontalFlip(flip_prob=0.5),
             RandomVerticalFlip(flip_prob=0.5),
             RandomRotation((0, 360)),
-            Normalize(),
+            ZScoreNormalize(),
     ])
 
     trans_val = Compose([
@@ -127,7 +128,7 @@ if __name__ == '__main__':
             # RandomHorizontalFlip(flip_prob=0.5),
             # RandomVerticalFlip(flip_prob=0.5),
             # RandomRotation((0, 360)),
-            Normalize(),
+            ZScoreNormalize(),
     ])
     train_datasets = BRATS21_2D(train_txt,
                                 transform=trans_trian)
